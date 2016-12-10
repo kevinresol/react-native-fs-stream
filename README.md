@@ -38,7 +38,6 @@
 ```javascript
 import FsStream from 'react-native-fs-stream';
 
-// TODO: What do with the module?
 const path = Fs.DocumentDirectoryPath + '/test.txt';
 Fs.openForWrite(path).then((fd) => {
 	return Fs.write(fd, 'MTIzNDU2Nzg5MA==')
