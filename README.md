@@ -34,20 +34,47 @@
       compile project(':react-native-fs-stream')
   	```
 
-#### Windows
-[Read it! :D](https://github.com/ReactWindows/react-native)
-
-1. In Visual Studio add the `RNFsStream.sln` in `node_modules/react-native-fs-stream/windows/RNFsStream.sln` folder to their solution, reference from their app.
-2. Open up your `MainPage.cs` app
-  - Add `using Cl.Json.RNFsStream;` to the usings at the top of the file
-  - Add `new RNFsStreamPackage()` to the `List<IReactPackage>` returned by the `Packages` method
-
-
 ## Usage
 ```javascript
-import RNFsStream from 'react-native-fs-stream';
+import FsStream from 'react-native-fs-stream';
 
 // TODO: What do with the module?
-RNFsStream;
+const path = Fs.DocumentDirectoryPath + '/test.txt';
+Fs.openForWrite(path).then((fd) => {
+	return Fs.write(fd, 'MTIzNDU2Nzg5MA==')
+		.then(() => {
+			console.log('written');
+			Fs.closeWrite(fd);
+			return Fs.openForRead(path);
+		});
+}).then((fd) => {
+	const self = this;
+	function next() {
+	Fs.read(fd, 3).then((v) => {
+		console.log(v);
+		self.setState({data: self.state.data + v.data});
+		if(!v.ended) next();
+	});
+	}
+	next();
+}).catch((e) => console.log(e));
+```
+
+
+## API
+
+```haxe
+/** Open a file for read. Returns a file descriptor. Note that on android it is a psuedo-fd **/
+function openForRead(path:String):Promise<Int>;
+/** Open a file for write. Returns a file descriptor. Note that on android it is a psuedo-fd **/
+function openForWrite(path:String):Promise<>;
+/** Read some bytes from a fd, returns the data as base64 encoded string **/
+function read(fd:Int, size:Int):Promise<{data:String, bytesRead:Int, ended:Bool}>;
+/** Read some data(base64 encoded) to a fd. **/
+function write(fd:Int, data:String):Promise<>;
+/** Close read **/
+function closeRead(fd:Int):Promise<>;
+/** Close write **/
+function closeWrite(fd:Int):Promise<>;
 ```
   

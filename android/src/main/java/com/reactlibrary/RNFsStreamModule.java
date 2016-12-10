@@ -72,7 +72,7 @@ public class RNFsStreamModule extends ReactContextBaseJavaModule {
       int offset = 0;
       int numRead = 0;
 
-      while(offset < buffer.length && (numRead = f.read(buffer, offset, buffer.length - offset)) > 0) {
+      while(offset < size && (numRead = f.read(buffer, offset, size - offset)) > 0) {
         offset += numRead;
       }
 
@@ -81,7 +81,7 @@ public class RNFsStreamModule extends ReactContextBaseJavaModule {
         reads.remove(fd);
       }
 
-      if(offset < buffer.length) {
+      if(offset < size) {
         byte[] trunc = new byte[offset];
         System.arraycopy(buffer, 0, trunc, 0, offset);
         buffer = trunc;
@@ -89,7 +89,7 @@ public class RNFsStreamModule extends ReactContextBaseJavaModule {
 
       WritableMap result = Arguments.createMap();
       result.putString("data", Base64.encodeToString(buffer, Base64.NO_WRAP));
-      result.putInt("bytesRead", buffer.length);
+      result.putInt("bytesRead", offset);
       result.putBoolean("ended", numRead == -1);
       promise.resolve(result);
 
