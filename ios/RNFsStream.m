@@ -5,16 +5,10 @@
 
 - (dispatch_queue_t)methodQueue
 {
-    return dispatch_get_main_queue();
+    return dispatch_queue_create("com.kevinresol.RNFsStream", DISPATCH_QUEUE_SERIAL);
 }
-RCT_EXPORT_MODULE()
 
-- (void) open:(NSString *)path
-         flag:(int)flag
-     resolver:(RCTPromiseResolveBlock)resolve
-     rejecter:(RCTPromiseRejectBlock)reject
-{
-}
+RCT_EXPORT_MODULE()
 
 - (NSString *)getPathForDirectory:(int)directory
 {
@@ -46,6 +40,7 @@ RCT_EXPORT_METHOD(openForRead:(NSString *)path
     if(fd == -1) {
         NSError *error = [[NSError alloc] initWithDomain:NSPOSIXErrorDomain code:404 userInfo:nil];
         reject(@"Not Found", @"File not found", error);
+        return;
     }
     
     resolve([NSNumber numberWithInt:fd]);
@@ -60,6 +55,7 @@ RCT_EXPORT_METHOD(openForWrite:(NSString *)path
     if(fd == -1) {
         NSError *error = [[NSError alloc] initWithDomain:NSPOSIXErrorDomain code:404 userInfo:nil];
         reject(@"Not Found", @"File not found", error);
+        return;
     }
     
     resolve([NSNumber numberWithInt:fd]);

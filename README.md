@@ -48,11 +48,10 @@ Fs.openForWrite(path).then((fd) => {
 }).then((fd) => {
 	const self = this;
 	function next() {
-	Fs.read(fd, 3).then((v) => {
-		console.log(v);
-		self.setState({data: self.state.data + v.data});
-		if(!v.ended) next();
-	});
+		Fs.read(fd, 3).then((v) => {
+			console.log('received data: ' + v);
+			if(!v.ended) next();
+		});
 	}
 	next();
 }).catch((e) => console.log(e));
@@ -75,4 +74,8 @@ function closeRead(fd:Int):Promise<Void>;
 /** Close write **/
 function closeWrite(fd:Int):Promise<Void>;
 ```
-  
+
+## Caution
+
+Don't try to read/write a big chunk (> ~10MB) in a single call, that will possibly result in a Out-Of-Memory exception on Android.
+

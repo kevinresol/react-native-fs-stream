@@ -60,61 +60,74 @@ public class RNFsStreamModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void read(Integer fd, Integer size, Promise promise) {
+  public void read(final Integer fd, final Integer size, final Promise promise) {
     if(!reads.containsKey(fd)) {
       promise.reject("Not Opened", "The provided file descriptor is not opened for read. Call openForRead first.");
       return;
     }
-    try {
-      FileInputStream f = reads.get(fd);
-      byte[] buffer = new byte[size];
 
-      int offset = 0;
-      int numRead = 0;
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+        try {
+          FileInputStream f = reads.get(fd);
+          byte[] buffer = new byte[size];
 
-      while(offset < size && (numRead = f.read(buffer, offset, size - offset)) > 0) {
-        offset += numRead;
+          int offset = 0;
+          int numRead = 0;
+
+          while (offset < size && (numRead = f.read(buffer, offset, size - offset)) > 0) {
+            offset += numRead;
+          }
+
+          if (numRead == -1) {
+            f.close();
+            reads.remove(fd);
+          }
+
+          if (offset < size) {
+            byte[] trunc = new byte[offset];
+            System.arraycopy(buffer, 0, trunc, 0, offset);
+            buffer = trunc;
+          }
+
+          WritableMap result = Arguments.createMap();
+          result.putString("data", Base64.encodeToString(buffer, Base64.NO_WRAP));
+          result.putInt("bytesRead", offset);
+          result.putBoolean("ended", numRead == -1);
+          promise.resolve(result);
+
+        } catch (Exception ex) {
+          promise.reject(ex);
+        }
       }
-
-      if(numRead == -1) {
-        f.close();
-        reads.remove(fd);
-      }
-
-      if(offset < size) {
-        byte[] trunc = new byte[offset];
-        System.arraycopy(buffer, 0, trunc, 0, offset);
-        buffer = trunc;
-      }
-
-      WritableMap result = Arguments.createMap();
-      result.putString("data", Base64.encodeToString(buffer, Base64.NO_WRAP));
-      result.putInt("bytesRead", offset);
-      result.putBoolean("ended", numRead == -1);
-      promise.resolve(result);
-
-    } catch(Exception ex) {
-      promise.reject(ex);
-    }
+    };
+    thread.start();
   }
 
   @ReactMethod
-  public void write(Integer fd, String data, Promise promise) {
+  public void write(final Integer fd, final String data, final Promise promise) {
     if(!writes.containsKey(fd)) {
       promise.reject("Not Opened", "The provided file descriptor is not opened for write. Call openForWrite first.");
       return;
     }
-    try {
-      FileOutputStream f = writes.get(fd);
-      byte[] buffer = Base64.decode(data, Base64.DEFAULT);
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+        try {
+          FileOutputStream f = writes.get(fd);
+          byte[] buffer = Base64.decode(data, Base64.DEFAULT);
 
-      f.write(buffer);
+          f.write(buffer);
 
-      promise.resolve(null);
+          promise.resolve(null);
 
-    } catch(Exception ex) {
-      promise.reject(ex);
-    }
+        } catch(Exception ex) {
+          promise.reject(ex);
+        }
+      }
+    };
+    thread.start();
   }
 
   @ReactMethod
