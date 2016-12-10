@@ -43,7 +43,6 @@ const path = Fs.DocumentDirectoryPath + '/test.txt';
 Fs.openForWrite(path).then((fd) => {
 	return Fs.write(fd, 'MTIzNDU2Nzg5MA==')
 		.then(() => {
-			console.log('written');
 			Fs.closeWrite(fd);
 			return Fs.openForRead(path);
 		});
@@ -71,10 +70,10 @@ function openForWrite(path:String):Promise<>;
 /** Read some bytes from a fd, returns the data as base64 encoded string **/
 function read(fd:Int, size:Int):Promise<{data:String, bytesRead:Int, ended:Bool}>;
 /** Read some data(base64 encoded) to a fd. **/
-function write(fd:Int, data:String):Promise<>;
+function write(fd:Int, data:String):Promise<Void>;
 /** Close read **/
-function closeRead(fd:Int):Promise<>;
+function closeRead(fd:Int):Promise<Void>;
 /** Close write **/
-function closeWrite(fd:Int):Promise<>;
+function closeWrite(fd:Int):Promise<Void>;
 ```
   

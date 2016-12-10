@@ -70,33 +70,34 @@ RCT_EXPORT_METHOD(read:(int)fd size:(int)size
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSMutableData *data = [[NSMutableData alloc] initWithLength:size];
-    if(data) {
-        void *buffer = [data mutableBytes];
-        int offset = 0;
-        int numRead = 0;
-        
-        while(offset < size && (numRead = read(fd, buffer, size - offset)) > 0) {
-            offset += numRead;
-        }
-        
-        if(numRead == 0) {
-            close(fd);
-        }
-        
-        if(offset < size) {
-            [data setLength:offset];
-        }
-        
-        NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        [result setObject:[data base64EncodedStringWithOptions:0] forKey:@"data"];
-        [result setObject:[NSNumber numberWithInt:offset] forKey:@"bytesRead"];
-        [result setObject:[NSNumber numberWithBool:numRead == 0] forKey:@"ended"];
-        resolve(result);
-        
-    } else {
-        NSError *error = [[NSError alloc] initWithDomain:NSPOSIXErrorDomain code:500 userInfo:nil];
-        reject(@"Alloc Error", @"Cannot allocate buffer", error);
+    void *buffer = [data mutableBytes];
+    int offset = 0;
+    int numRead = 0;
+    
+    while(offset < size && (numRead = read(fd, buffer, size - offset)) > 0) {
+        offset += numRead;
     }
+    
+    if(numRead == -1) {
+        NSError *error = [[NSError alloc] initWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        reject([NSString stringWithUTF8String:strerror(errno)], @"Cannot read from file", error);
+        return;
+    }
+    
+    if(numRead <= 0) {
+        close(fd);
+    }
+    
+    if(offset < size) {
+        [data setLength:offset];
+    }
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    [result setObject:[data base64EncodedStringWithOptions:0] forKey:@"data"];
+    [result setObject:[NSNumber numberWithInt:offset] forKey:@"bytesRead"];
+    [result setObject:[NSNumber numberWithBool:numRead == 0] forKey:@"ended"];
+    resolve(result);
+    
 }
 
 RCT_EXPORT_METHOD(write:(int)fd data:(NSString *)str
@@ -104,8 +105,13 @@ RCT_EXPORT_METHOD(write:(int)fd data:(NSString *)str
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSData *data = [[NSData alloc] initWithBase64EncodedString:str options:0];
-    write(fd, [data bytes], [data length]);
-    resolve([NSNull null]);
+    int ret = write(fd, [data bytes], [data length]);
+    if(ret == -1) {
+        NSError *error = [[NSError alloc] initWithDomain:NSPOSIXErrorDomain code:500 userInfo:nil];
+        reject(@"Write Error", @"Cannot write to the specified file descriptor", error);
+    } else {
+        resolve([NSNull null]);
+    }
 }
 
 
